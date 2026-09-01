@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 # ================= 配置区 =================
-API_KEY = "18d9ee10f033718702481b776d9c884a"        # 高德开放平台申请的 Web 服务 Key
+API_KEY = "【请替换为你的API Key】"        # 高德开放平台申请的 Web 服务 Key
 CITY = "哈尔滨市"                                   # 城市名称，如 "北京市" / "哈尔滨市" / "广州市"
 KEYWORDS = ["理发店", "美发店", "造型工作室", "快剪", "男士理发馆"]   # 拆分后的单个关键词列表
 OUTPUT_FIELDS = ["名称", "地址", "经纬度", "电话", "省份", "城市", "区县"]
