@@ -303,7 +303,8 @@
     if(!map || !cluster) return;
     var b = map.getBounds();
     if(!b) return;
-    var w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
+    var sw = b.getSouthWest(), ne = b.getNorthEast();
+    var w = sw.getLng(), s = sw.getLat(), e = ne.getLng(), n = ne.getLat();
     var inView = [];
     for(var i=0;i<state.all.length;i++){
       var x=state.all[i];
@@ -330,7 +331,7 @@
       map.on('click', function(){ infoWindow.close(); });
       // 初始视野覆盖全部数据
       var b = dataBounds();
-      map.setBounds(new AMap.Bounds([b.minLng,b.minLat],[b.maxLng,b.maxLat]));
+      map.setBounds(new AMap.Bounds(new AMap.LngLat(b.minLng, b.minLat), new AMap.LngLat(b.maxLng, b.maxLat)));
       loadViewport();
       mapReady = true;
     });
