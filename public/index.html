@@ -293,14 +293,43 @@
     return {minLng:minLng,minLat:minLat,maxLng:maxLng,maxLat:maxLat};
   }
 
-  function makeMarker(x){
-    var m = new AMap.Marker({ position:[x.lng,x.lat], title:x.n });
-    m.on('click', function(){ showShopInfo(x, m.getPosition()); });
-    return m;
+  /* 单个店铺点（小圆点）渲染 + 点击弹窗 */
+  function renderMarker(context){
+    var div = document.createElement('div');
+    div.style.width='14px'; div.style.height='14px';
+    div.style.background='#2f6fed'; div.style.border='2px solid #fff';
+    div.style.borderRadius='50%'; div.style.boxShadow='0 1px 4px rgba(0,0,0,.35)';
+    div.style.cursor='pointer';
+    context.marker.setContent(div);
+    context.marker.setOffset(new AMap.Pixel(-7,-7));
+    var d = context.data && context.data.data;
+    if(d){
+      var pos = context.marker.getPosition();
+      context.marker.on('click', function(){ showShopInfo(d, pos); });
+    }
+  }
+
+  /* 聚合气泡渲染 + 点击放大 */
+  function renderClusterMarker(context){
+    var div = document.createElement('div');
+    div.style.background='linear-gradient(135deg,#2f6fed,#4a90d9)';
+    div.style.color='#fff'; div.style.fontSize='13px'; div.style.fontWeight='700';
+    div.style.borderRadius='50%'; div.style.border='2px solid #fff';
+    div.style.boxShadow='0 2px 8px rgba(47,111,237,.45)';
+    div.style.display='flex'; div.style.alignItems='center'; div.style.justifyContent='center';
+    div.style.cursor='pointer';
+    div.style.width='36px'; div.style.height='36px';
+    div.textContent = context.count;
+    context.marker.setContent(div);
+    context.marker.setOffset(new AMap.Pixel(-18,-18));
+    var pos = context.marker.getPosition();
+    context.marker.on('click', function(){
+      if(map) map.setZoomAndCenter(map.getZoom()+1, pos);
+    });
   }
 
   function loadViewport(){
-    if(!map || !cluster) return;
+    if(!map) return;
     var b = map.getBounds();
     if(!b) return;
     var sw = b.getSouthWest(), ne = b.getNorthEast();
@@ -310,8 +339,17 @@
       var x=state.all[i];
       if(x.lng>=w && x.lng<=e && x.lat>=s && x.lat<=n) inView.push(x);
     }
-    var markers = inView.map(makeMarker);
-    cluster.setMarkers(markers);
+    var points = [];
+    for(var j=0;j<inView.length;j++){
+      points.push({ lnglat:[inView[j].lng, inView[j].lat], data:inView[j] });
+    }
+    // 高德 2.0 点聚合：重建聚合器（官方推荐方式）
+    if(cluster) cluster.setMap(null);
+    cluster = new AMap.MarkerCluster(map, points, {
+      gridSize: 60,
+      renderClusterMarker: renderClusterMarker,
+      renderMarker: renderMarker
+    });
     $('mapCount').textContent = '当前视野 ' + fmt(inView.length) + ' 家 · 共 ' + fmt(state.all.length) + ' 家';
   }
 
@@ -321,10 +359,9 @@
       $('mapContainer').innerHTML = '<div class="map-fallback">高德地图加载失败：请检查网络，或确认 JS API Key / 安全配置正确。</div>';
       return;
     }
-    AMap.plugin('AMap.MarkerClusterer', function(){
+    AMap.plugin('AMap.MarkerCluster', function(){
       map = new AMap.Map('mapContainer', { zoom:5, center:[121,40], resizeEnable:true, keyboardEnable:false });
       infoWindow = new AMap.InfoWindow({ offset:new AMap.Pixel(0,-30), autoMove:true });
-      cluster = new AMap.MarkerClusterer(map, [], { gridSize:60, maxZoom:12, zoomOnClick:true });
       var onMove = throttle(loadViewport, 200);
       map.on('moveend', onMove);
       map.on('zoomend', onMove);
@@ -464,7 +501,7 @@
       applyFilter();
       // 加载高德 JS API 并初始化地图
       var s = document.createElement('script');
-      s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + AMAP_KEY + '&plugin=AMap.MarkerClusterer';
+      s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + AMAP_KEY + '&plugin=AMap.MarkerCluster';
       s.onload = function(){ initMap(); };
       s.onerror = function(){
         $('mapContainer').innerHTML = '<div class="map-fallback">高德地图脚本加载失败：请检查网络或 Key 配置。</div>';
