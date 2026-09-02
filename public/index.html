@@ -7,15 +7,20 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif; background:#f5f7fb; color:#1f2430; }
-  header { background:linear-gradient(135deg,#2f6fed,#4a90d9); color:#fff; padding:36px 20px 88px; text-align:center; }
-  header h1 { font-size:28px; font-weight:700; letter-spacing:1px; }
-  header p { margin-top:10px; font-size:14px; opacity:.92; }
-  .wrap { max-width:1080px; margin:0 auto; padding:0 16px; }
+  header { background:linear-gradient(135deg,#2f6fed,#4a90d9); color:#fff; padding:28px 20px 56px; text-align:center; }
+  header h1 { font-size:26px; font-weight:700; letter-spacing:1px; }
+  header p { margin-top:8px; font-size:13px; opacity:.92; }
+  .wrap { max-width:1160px; margin:0 auto; padding:0 16px; }
 
-  .stats { display:flex; gap:14px; flex-wrap:wrap; margin-top:-56px; }
-  .stat { flex:1 1 140px; min-width:140px; background:#fff; border-radius:14px; padding:16px; box-shadow:0 6px 20px rgba(31,36,48,.06); text-align:center; }
-  .stat .num { font-size:26px; font-weight:700; color:#2f6fed; margin-top:4px; }
+  .stats { display:flex; gap:12px; flex-wrap:wrap; margin-top:-40px; }
+  .stat { flex:1 1 140px; min-width:130px; background:#fff; border-radius:14px; padding:14px; box-shadow:0 6px 20px rgba(31,36,48,.06); text-align:center; }
+  .stat .num { font-size:24px; font-weight:700; color:#2f6fed; margin-top:4px; }
   .stat .label { font-size:12px; color:#6b7280; }
+
+  .viewbar { display:flex; gap:10px; margin-top:16px; align-items:center; }
+  .viewbar .tabs { display:flex; background:#fff; border-radius:10px; padding:4px; box-shadow:0 4px 14px rgba(31,36,48,.06); }
+  .viewbar .tabs button { border:none; background:transparent; padding:9px 18px; border-radius:8px; font-size:14px; cursor:pointer; color:#6b7280; }
+  .viewbar .tabs button.active { background:#2f6fed; color:#fff; }
 
   .panel { background:#fff; border-radius:14px; padding:18px; box-shadow:0 6px 20px rgba(31,36,48,.05); }
   .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; margin-top:14px; }
@@ -45,8 +50,45 @@
   .pagination button:disabled { opacity:.45; cursor:not-allowed; }
   .pagination .info { font-size:12px; color:#6b7280; margin:0 6px; }
 
+  /* 地图视图 */
+  #mapView { display:none; margin-top:14px; }
+  #mapView.show { display:block; }
+  .map-toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .map-search { position:relative; flex:1 1 320px; min-width:0; }
+  .map-search input { width:100%; padding:12px 14px; border:1px solid #dde3ec; border-radius:10px; font-size:14px; background:#fff; }
+  .map-search input:focus { outline:none; border-color:#2f6fed; }
+  .map-search .suggest { position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e5eaf2; border-radius:10px; box-shadow:0 10px 30px rgba(31,36,48,.12); max-height:300px; overflow-y:auto; z-index:100; display:none; }
+  .map-search .suggest.show { display:block; }
+  .map-search .suggest .item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f3f9; }
+  .map-search .suggest .item:hover { background:#f4f8ff; }
+  .map-search .suggest .item b { color:#1f2430; font-size:13px; }
+  .map-search .suggest .item span { display:block; color:#8a94a6; font-size:12px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .map-hint { font-size:12px; color:#6b7280; margin-left:auto; }
+  #mapContainer { width:100%; height:640px; border-radius:14px; overflow:hidden; box-shadow:0 6px 20px rgba(31,36,48,.06); }
+  .map-fallback { width:100%; height:640px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; color:#9aa3b2; font-size:14px; border:1px dashed #dde3ec; }
+
   footer { text-align:center; color:#9aa3b2; font-size:12px; padding:24px 0 32px; }
-  @media (max-width:600px){ header{padding:28px 14px 76px;} header h1{font-size:22px;} .chart{height:230px;} }
+  @media (max-width:600px){ header{padding:22px 14px 48px;} header h1{font-size:20px;} .chart{height:230px;} #mapContainer{height:480px;} }
+
+  /* 评价弹窗 */
+  .modal-mask { position:fixed; inset:0; background:rgba(20,26,38,.45); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .modal-mask.show { display:flex; }
+  .modal { width:92%; max-width:400px; background:#fff; border-radius:16px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+  .modal h4 { font-size:16px; color:#1f2430; margin-bottom:14px; }
+  .modal .shop { font-size:13px; color:#6b7280; margin-bottom:12px; line-height:1.5; }
+  .stars { display:flex; gap:6px; margin-bottom:14px; }
+  .stars .star { font-size:28px; color:#d6dbe6; cursor:pointer; user-select:none; }
+  .stars .star.on { color:#f5a623; }
+  .modal textarea { width:100%; height:90px; border:1px solid #dde3ec; border-radius:10px; padding:10px; font-size:13px; resize:vertical; font-family:inherit; }
+  .modal textarea:focus { outline:none; border-color:#2f6fed; }
+  .modal .btns { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+  .modal .btns button { padding:9px 18px; border-radius:9px; font-size:13px; cursor:pointer; border:none; }
+  .modal .btns .ok { background:#2f6fed; color:#fff; }
+  .modal .btns .no { background:#eef1f6; color:#4b5563; }
+  .info-actions { margin-top:10px; }
+  .info-actions .rv { color:#2f6fed; cursor:pointer; font-size:13px; font-weight:600; border:none; background:#eaf1fe; padding:7px 14px; border-radius:8px; }
+  .review-box { margin-top:8px; border-top:1px solid #eef1f6; padding-top:8px; font-size:12px; color:#4b5563; }
+  .review-box .rv-stars { color:#f5a623; }
 </style>
 </head>
 <body>
@@ -67,43 +109,92 @@
     <div class="stat"><div class="label">牡丹江市</div><div class="num" id="stM">-</div></div>
   </section>
 
-  <section class="grid2">
-    <div class="panel"><h3>各城市店铺数量</h3><div class="chart" id="chartCity"></div></div>
-    <div class="panel"><h3>区县店铺数量 Top 8</h3><div class="chart" id="chartDistrict"></div></div>
+  <div class="viewbar">
+    <div class="tabs">
+      <button id="btnMap" class="active" type="button">🗺 地图浏览</button>
+      <button id="btnTable" type="button">📋 数据表格</button>
+    </div>
+  </div>
+
+  <!-- 地图视图 -->
+  <section id="mapView" class="show">
+    <div class="map-toolbar">
+      <div class="map-search">
+        <input id="mapSearch" type="text" placeholder="搜索店铺名称或地址，回车/点选定位…">
+        <div class="suggest" id="suggest"></div>
+      </div>
+      <span class="map-hint" id="mapCount">-</span>
+    </div>
+    <div id="mapContainer"><div class="map-fallback">地图加载中…（若长时间无响应，请确认高德 JS API Key 已配置域名白名单）</div></div>
   </section>
 
-  <section class="panel" style="margin-top:14px;">
-    <h3>店铺查询</h3>
-    <div class="filterbar">
-      <select id="fCity"><option value="">全部城市</option></select>
-      <select id="fDistrict"><option value="">全部区县</option></select>
-      <input id="fKeyword" type="text" placeholder="搜索店铺名称或地址…">
+  <!-- 表格视图 -->
+  <section id="tableView">
+    <div class="grid2">
+      <div class="panel"><h3>各城市店铺数量</h3><div class="chart" id="chartCity"></div></div>
+      <div class="panel"><h3>区县店铺数量 Top 8</h3><div class="chart" id="chartDistrict"></div></div>
     </div>
-    <div class="result-head"><span id="resultCount">-</span></div>
-    <div class="tablebox">
-      <table>
-        <thead><tr><th>名称</th><th>地址</th><th>区县</th><th>电话</th><th>经纬度</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="panel" style="margin-top:14px;">
+      <h3>店铺查询</h3>
+      <div class="filterbar">
+        <select id="fCity"><option value="">全部城市</option></select>
+        <select id="fDistrict"><option value="">全部区县</option></select>
+        <input id="fKeyword" type="text" placeholder="搜索店铺名称或地址…">
+      </div>
+      <div class="result-head"><span id="resultCount">-</span></div>
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>名称</th><th>地址</th><th>区县</th><th>电话</th><th>经纬度</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
     </div>
-    <div class="pagination" id="pagination"></div>
   </section>
 
-  <footer>数据来源：高德地图 POI 采集 · 生成于 2026-09-02</footer>
+  <footer>数据来源：高德地图 POI 采集 · 生成于 2026-09-02 · 评价数据仅存于本地浏览器</footer>
 </main>
+
+<!-- 写评价弹窗 -->
+<div class="modal-mask" id="reviewModal">
+  <div class="modal">
+    <h4>写评价</h4>
+    <div class="shop" id="rvShop"></div>
+    <div class="stars" id="rvStars"></div>
+    <textarea id="rvText" placeholder="说说这家店怎么样…"></textarea>
+    <div class="btns">
+      <button class="no" type="button" id="rvCancel">取消</button>
+      <button class="ok" type="button" id="rvOk">保存</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
 (function(){
+  /* ========== 配置 ==========
+   * 高德 JS API Key（与你采集用的 Web 服务 Key 不同，需在控制台创建「Web端(JS API)」应用获取）。
+   * 使用前请确认该 Key 的安全配置已完成其一：
+   *   ① 在高德控制台为该 Key 配置「域名白名单」（本地上调试请加入 127.0.0.1 / localhost）；
+   *   ② 或取消白名单、使用安全密钥 securityJsCode（此时需在下方 _AMapSecurityConfig 填入你的 securityJsCode）。
+   */
+  var AMAP_KEY = 'e2198cb8c293b103930bcba59cb5c673';
+  // 若你的 Key 需要安全密钥方式，取消下面一行注释并填入你的 securityJsCode：
+  // window._AMapSecurityConfig = { securityJsCode: '你的安全密钥' };
+
+  var REVIEW_KEY = 'lifadian_reviews_v1';
+
   var state = { all:[], filtered:[], page:1, pageSize:20, city:'', district:'', kw:'' };
   var cityChart = null, distChart = null;
+  var map = null, cluster = null, infoWindow = null, mapReady = false;
+  var currentReviewIdx = -1, currentReviewRating = 0;
 
   function $(id){ return document.getElementById(id); }
-
   function fmt(n){ return (n||0).toLocaleString(); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function throttle(fn, wait){ var t=null; return function(){ var a=arguments, self=this; if(!t){ fn.apply(self,a); t=setTimeout(function(){ t=null; }, wait); } }; }
 
-  function esc(s){ return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-
+  /* ---------- 表格视图（保留原功能） ---------- */
   function applyFilter(){
     var arr = state.all.filter(function(x){
       if(state.city && x.c !== state.city) return false;
@@ -114,11 +205,8 @@
       }
       return true;
     });
-    state.filtered = arr;
-    state.page = 1;
-    render();
+    state.filtered = arr; state.page = 1; render();
   }
-
   function render(){
     $('resultCount').textContent = '共 ' + fmt(state.filtered.length) + ' 条';
     var start = (state.page-1)*state.pageSize;
@@ -131,7 +219,6 @@
     $('tbody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:#9aa3b2;padding:24px;">未找到匹配的店铺</td></tr>';
     renderPagination();
   }
-
   function renderPagination(){
     var total = state.filtered.length, pages = Math.max(1, Math.ceil(total/state.pageSize));
     var p = $('pagination');
@@ -147,12 +234,11 @@
     html += '<span class="info">'+state.page+' / '+pages+' 页</span>';
     p.innerHTML = html;
   }
-
   function drawCharts(){
     if(typeof echarts === 'undefined'){ return; }
     if(!cityChart){ cityChart = echarts.init($('chartCity')); }
-    var cities = [];
-    state.all.forEach(function(x){ cities[x.c] = (cities[x.c]||0)+1; });
+    var cities = {};
+    state.all.forEach(function(x){ cities[x.c]=(cities[x.c]||0)+1; });
     var names = Object.keys(cities), vals = names.map(function(n){return cities[n];});
     cityChart.setOption({
       backgroundColor:'transparent',
@@ -181,6 +267,186 @@
     });
   }
 
+  /* ---------- 评价（localStorage） ---------- */
+  function reviewKey(x){ return String(x.n)+'||'+String(x.a); }
+  function loadAllReviews(){ try{ return JSON.parse(localStorage.getItem(REVIEW_KEY)||'{}'); }catch(e){ return {}; } }
+  function getReview(x){ return loadAllReviews()[reviewKey(x)] || null; }
+  function saveReview(x, rating, text){
+    var all = loadAllReviews();
+    all[reviewKey(x)] = { name:x.n, addr:x.a, rating:rating, text:text, time:new Date().toLocaleString() };
+    try{ localStorage.setItem(REVIEW_KEY, JSON.stringify(all)); }catch(e){ alert('保存失败：浏览器存储空间不足'); }
+  }
+  function starsHtml(rating){
+    var s='';
+    for(var i=1;i<=5;i++){ s += '<span class="'+(i<=rating?'':'')+'" style="color:'+(i<=rating?'#f5a623':'#d6dbe6')+';">★</span>'; }
+    return s;
+  }
+
+  /* ---------- 地图：视野动态加载 ---------- */
+  function dataBounds(){
+    var minLng=999,minLat=999,maxLng=-999,maxLat=-999;
+    for(var i=0;i<state.all.length;i++){
+      var x=state.all[i];
+      if(x.lng<minLng)minLng=x.lng; if(x.lng>maxLng)maxLng=x.lng;
+      if(x.lat<minLat)minLat=x.lat; if(x.lat>maxLat)maxLat=x.lat;
+    }
+    return {minLng:minLng,minLat:minLat,maxLng:maxLng,maxLat:maxLat};
+  }
+
+  function makeMarker(x){
+    var m = new AMap.Marker({ position:[x.lng,x.lat], title:x.n });
+    m.on('click', function(){ showShopInfo(x, m.getPosition()); });
+    return m;
+  }
+
+  function loadViewport(){
+    if(!map || !cluster) return;
+    var b = map.getBounds();
+    if(!b) return;
+    var w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
+    var inView = [];
+    for(var i=0;i<state.all.length;i++){
+      var x=state.all[i];
+      if(x.lng>=w && x.lng<=e && x.lat>=s && x.lat<=n) inView.push(x);
+    }
+    var markers = inView.map(makeMarker);
+    cluster.setMarkers(markers);
+    $('mapCount').textContent = '当前视野 ' + fmt(inView.length) + ' 家 · 共 ' + fmt(state.all.length) + ' 家';
+  }
+
+  function initMap(){
+    if(mapReady) return;
+    if(typeof AMap === 'undefined'){
+      $('mapContainer').innerHTML = '<div class="map-fallback">高德地图加载失败：请检查网络，或确认 JS API Key / 安全配置正确。</div>';
+      return;
+    }
+    AMap.plugin('AMap.MarkerClusterer', function(){
+      map = new AMap.Map('mapContainer', { zoom:5, center:[121,40], resizeEnable:true, keyboardEnable:false });
+      infoWindow = new AMap.InfoWindow({ offset:new AMap.Pixel(0,-30), autoMove:true });
+      cluster = new AMap.MarkerClusterer(map, [], { gridSize:60, maxZoom:12, zoomOnClick:true });
+      var onMove = throttle(loadViewport, 200);
+      map.on('moveend', onMove);
+      map.on('zoomend', onMove);
+      map.on('click', function(){ infoWindow.close(); });
+      // 初始视野覆盖全部数据
+      var b = dataBounds();
+      map.setBounds(new AMap.Bounds([b.minLng,b.minLat],[b.maxLng,b.maxLat]));
+      loadViewport();
+      mapReady = true;
+    });
+  }
+
+  /* ---------- 点击弹窗 + 评价 ---------- */
+  function showShopInfo(x, pos){
+    var rv = getReview(x);
+    var rvHtml = '';
+    if(rv){
+      rvHtml = '<div class="review-box"><div class="rv-stars">'+starsHtml(rv.rating)+'</div>'+
+               '<div>'+esc(rv.text)+'</div><div style="color:#9aa3b2;font-size:11px;margin-top:2px;">'+esc(rv.time)+'</div></div>';
+    }
+    var html = '<div style="font-family:\'PingFang SC\',\'Microsoft YaHei\',sans-serif;max-width:260px;">'+
+      '<div style="font-size:15px;font-weight:700;color:#1f2430;margin-bottom:4px;">'+esc(x.n)+'</div>'+
+      '<div style="font-size:12px;color:#6b7280;line-height:1.5;">'+esc(x.a)+'</div>'+
+      '<div style="font-size:12px;color:#6b7280;margin-top:4px;">📞 '+(x.p?esc(x.p):'未登记')+'</div>'+
+      '<div style="font-size:11px;color:#9aa3b2;margin-top:2px;">'+esc(x.d)+' · '+esc(x.c)+'</div>'+
+      '<div class="info-actions"><button class="rv" type="button" onclick="window.__openReview('+state.all.indexOf(x)+')">✏️ 写评价</button></div>'+
+      rvHtml+
+      '</div>';
+    infoWindow.setContent(html);
+    infoWindow.open(map, pos);
+  }
+
+  /* 暴露给 InfoWindow 内按钮 */
+  window.__openReview = function(idx){
+    var x = state.all[idx];
+    if(!x) return;
+    currentReviewIdx = idx;
+    currentReviewRating = 0;
+    $('rvShop').textContent = x.n + ' · ' + (x.d||'') + ' ' + (x.c||'');
+    $('rvText').value = '';
+    var rv = getReview(x);
+    if(rv){ currentReviewRating = rv.rating; $('rvText').value = rv.text; }
+    renderStars();
+    $('reviewModal').classList.add('show');
+  };
+  function renderStars(){
+    var html='';
+    for(var i=1;i<=5;i++){ html += '<span class="star'+(i<=currentReviewRating?' on':'')+'" data-v="'+i+'">★</span>'; }
+    $('rvStars').innerHTML = html;
+  }
+  $('rvStars').addEventListener('click', function(e){
+    var s = e.target.closest('.star'); if(!s) return;
+    currentReviewRating = parseInt(s.getAttribute('data-v'),10);
+    renderStars();
+  });
+  $('rvOk').addEventListener('click', function(){
+    var x = state.all[currentReviewIdx];
+    if(!x) return;
+    if(currentReviewRating === 0){ alert('请先选择评分（1-5 星）'); return; }
+    saveReview(x, currentReviewRating, $('rvText').value.trim());
+    $('reviewModal').classList.remove('show');
+    showShopInfo(x, [x.lng, x.lat]);
+  });
+  $('rvCancel').addEventListener('click', function(){ $('reviewModal').classList.remove('show'); });
+
+  /* ---------- 地图搜索 ---------- */
+  var sTimer=null;
+  $('mapSearch').addEventListener('input', function(){
+    clearTimeout(sTimer);
+    var v = this.value.trim();
+    sTimer = setTimeout(function(){ showSuggest(v); }, 250);
+  });
+  function showSuggest(kw){
+    var box = $('suggest');
+    if(!kw){ box.classList.remove('show'); return; }
+    var hits = [];
+    for(var i=0;i<state.all.length;i++){
+      var x=state.all[i];
+      if(x.n.indexOf(kw)>=0 || x.a.indexOf(kw)>=0) hits.push({x:x, i:i});
+      if(hits.length>=50) break;
+    }
+    if(!hits.length){ box.classList.remove('show'); return; }
+    var html = hits.map(function(h){
+      return '<div class="item" data-i="'+h.i+'"><b>'+esc(h.x.n)+'</b><span>'+esc(h.x.a)+' · '+esc(h.x.d)+'</span></div>';
+    }).join('');
+    box.innerHTML = html;
+    box.classList.add('show');
+  }
+  $('suggest').addEventListener('click', function(e){
+    var it = e.target.closest('.item'); if(!it) return;
+    var x = state.all[parseInt(it.getAttribute('data-i'),10)];
+    $('suggest').classList.remove('show');
+    $('mapSearch').value = x.n;
+    if(map){
+      map.setZoomAndCenter(16, [x.lng, x.lat]);
+      setTimeout(function(){ showShopInfo(x, [x.lng, x.lat]); }, 350);
+    }
+  });
+  $('mapSearch').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); var v=this.value.trim(); if(v) showSuggest(v); }
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.map-search')){ $('suggest').classList.remove('show'); }
+  });
+
+  /* ---------- 视图切换 ---------- */
+  $('btnMap').addEventListener('click', function(){
+    $('btnMap').classList.add('active'); $('btnTable').classList.remove('active');
+    $('tableView').style.display = 'none';
+    $('mapView').classList.add('show');
+    if(map) setTimeout(function(){ map.resize(); }, 30);
+    if(mapReady) loadViewport();
+    else if(!map && typeof AMap !== 'undefined') initMap();
+  });
+  $('btnTable').addEventListener('click', function(){
+    $('btnTable').classList.add('active'); $('btnMap').classList.remove('active');
+    $('mapView').classList.remove('show');
+    $('tableView').style.display = 'block';
+    if(cityChart) setTimeout(function(){ cityChart.resize(); distChart.resize(); }, 30);
+  });
+  $('tableView').style.display = 'none';
+
+  /* ---------- 数据加载 ---------- */
   function load(){
     fetch('data.json').then(function(r){ return r.json(); }).then(function(d){
       state.all = d.listings;
@@ -195,9 +461,18 @@
       });
       drawCharts();
       applyFilter();
+      // 加载高德 JS API 并初始化地图
+      var s = document.createElement('script');
+      s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + AMAP_KEY + '&plugin=AMap.MarkerClusterer';
+      s.onload = function(){ initMap(); };
+      s.onerror = function(){
+        $('mapContainer').innerHTML = '<div class="map-fallback">高德地图脚本加载失败：请检查网络或 Key 配置。</div>';
+      };
+      document.head.appendChild(s);
     }).catch(function(e){ $('tbody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;">数据加载失败，请确认站点已正确部署。</td></tr>'; });
   }
 
+  /* ---------- 事件绑定 ---------- */
   $('fCity').addEventListener('change', function(){
     state.city = this.value; state.district = '';
     var sel = $('fDistrict'); sel.innerHTML = '<option value="">全部区县</option>';
