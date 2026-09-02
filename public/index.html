@@ -302,23 +302,15 @@
     div.style.cursor='pointer';
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-7,-7));
-    // 从聚合数据中取店铺（context.data 是我们传入的 {lnglat, data} 对象）
+    // 把店铺数据挂到 marker 上，供 cluster click 事件读取
     var shop = null;
     if(context.data){
       shop = context.data.data || context.data.shop || context.data;
     }
-    if(shop && shop.n){
-      context.marker.setExtData(shop);
-      context.marker.on('click', function(e){
-        var m = e && e.target ? e.target : context.marker;
-        var d = (m.getExtData && m.getExtData()) || shop;
-        var pos = (m.getPosition && m.getPosition()) || [shop.lng, shop.lat];
-        showShopInfo(d, pos);
-      });
-    }
+    if(shop && shop.n){ context.marker.setExtData(shop); }
   }
 
-  /* 聚合气泡渲染 + 点击放大 */
+  /* 聚合气泡渲染（点击逻辑统一在 cluster 上处理） */
   function renderClusterMarker(context){
     var div = document.createElement('div');
     div.style.background='linear-gradient(135deg,#2f6fed,#4a90d9)';
@@ -331,11 +323,22 @@
     div.textContent = context.count;
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-18,-18));
-    context.marker.on('click', function(e){
-      var m = e && e.target ? e.target : context.marker;
-      var pos = (m.getPosition && m.getPosition()) || context.marker.getPosition();
-      if(map && pos) map.setZoomAndCenter(map.getZoom()+1, pos);
-    });
+    context.marker.setExtData({ _cluster:true, count:context.count });
+  }
+
+  /* 聚合器统一点击：聚合点放大，单点弹窗 */
+  function onClusterClick(e){
+    var m = e && e.target;
+    if(!m || !map) return;
+    var pos = m.getPosition ? m.getPosition() : null;
+    if(e.clusterData && e.clusterData.length){
+      // 聚合点 → 放大一级
+      if(pos) map.setZoomAndCenter(map.getZoom()+1, pos);
+    } else {
+      // 单点店铺 → 弹窗
+      var d = m.getExtData ? m.getExtData() : null;
+      if(d && d.n && pos) showShopInfo(d, pos);
+    }
   }
 
   function loadViewport(){
@@ -354,12 +357,13 @@
       points.push({ lnglat:[inView[j].lng, inView[j].lat], data:inView[j] });
     }
     // 高德 2.0 点聚合：重建聚合器（官方推荐方式）
-    if(cluster) cluster.setMap(null);
+    if(cluster){ cluster.setMap(null); cluster = null; }
     cluster = new AMap.MarkerCluster(map, points, {
       gridSize: 60,
       renderClusterMarker: renderClusterMarker,
       renderMarker: renderMarker
     });
+    cluster.on('click', onClusterClick);
     $('mapCount').textContent = '当前视野 ' + fmt(inView.length) + ' 家 · 共 ' + fmt(state.all.length) + ' 家';
   }
 
