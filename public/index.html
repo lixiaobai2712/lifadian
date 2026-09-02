@@ -302,10 +302,19 @@
     div.style.cursor='pointer';
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-7,-7));
-    var d = context.data && context.data.data;
-    if(d){
-      var pos = context.marker.getPosition();
-      context.marker.on('click', function(){ showShopInfo(d, pos); });
+    // 从聚合数据中取店铺（context.data 是我们传入的 {lnglat, data} 对象）
+    var shop = null;
+    if(context.data){
+      shop = context.data.data || context.data.shop || context.data;
+    }
+    if(shop && shop.n){
+      context.marker.setExtData(shop);
+      context.marker.on('click', function(e){
+        var m = e && e.target ? e.target : context.marker;
+        var d = (m.getExtData && m.getExtData()) || shop;
+        var pos = (m.getPosition && m.getPosition()) || [shop.lng, shop.lat];
+        showShopInfo(d, pos);
+      });
     }
   }
 
@@ -322,9 +331,10 @@
     div.textContent = context.count;
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-18,-18));
-    var pos = context.marker.getPosition();
-    context.marker.on('click', function(){
-      if(map) map.setZoomAndCenter(map.getZoom()+1, pos);
+    context.marker.on('click', function(e){
+      var m = e && e.target ? e.target : context.marker;
+      var pos = (m.getPosition && m.getPosition()) || context.marker.getPosition();
+      if(map && pos) map.setZoomAndCenter(map.getZoom()+1, pos);
     });
   }
 
