@@ -184,7 +184,7 @@
 
   var REVIEW_KEY = 'lifadian_reviews_v1';
 
-  var state = { all:[], filtered:[], page:1, pageSize:20, city:'', district:'', kw:'' };
+  var state = { all:[], filtered:[], page:1, pageSize:20, city:'', district:'', kw:'', view:[] };
   var cityChart = null, distChart = null;
   var map = null, cluster = null, infoWindow = null, mapReady = false;
   var currentReviewIdx = -1, currentReviewRating = 0;
@@ -302,15 +302,24 @@
     div.style.cursor='pointer';
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-7,-7));
-    // 把店铺数据挂到 marker 上，供 cluster click 事件读取
+    // 尽力把店铺数据挂到 marker 上
     var shop = null;
-    if(context.data){
-      shop = context.data.data || context.data.shop || context.data;
-    }
+    if(context.data){ shop = context.data.data || context.data.shop || context.data; }
     if(shop && shop.n){ context.marker.setExtData(shop); }
+    // 无条件绑定点击：有数据直接用；取不到则按坐标反查最近店铺
+    context.marker.on('click', function(e){
+      var m = e && e.target ? e.target : context.marker;
+      var d = (m.getExtData && m.getExtData()) || shop;
+      var pos = (m.getPosition && m.getPosition()) || null;
+      if(d && d.n && pos){ showShopInfo(d, pos); }
+      else {
+        var s = findNearestShop(pos);
+        if(s) showShopInfo(s, pos);
+      }
+    });
   }
 
-  /* 聚合气泡渲染（点击逻辑统一在 cluster 上处理） */
+  /* 聚合气泡渲染 + 点击放大 */
   function renderClusterMarker(context){
     var div = document.createElement('div');
     div.style.background='linear-gradient(135deg,#2f6fed,#4a90d9)';
@@ -323,22 +332,28 @@
     div.textContent = context.count;
     context.marker.setContent(div);
     context.marker.setOffset(new AMap.Pixel(-18,-18));
-    context.marker.setExtData({ _cluster:true, count:context.count });
+    context.marker.on('click', function(e){
+      var m = e && e.target ? e.target : context.marker;
+      var pos = (m.getPosition && m.getPosition()) || context.marker.getPosition();
+      if(map && pos) map.setZoomAndCenter(map.getZoom()+1, pos);
+    });
   }
 
-  /* 聚合器统一点击：聚合点放大，单点弹窗 */
-  function onClusterClick(e){
-    var m = e && e.target;
-    if(!m || !map) return;
-    var pos = m.getPosition ? m.getPosition() : null;
-    if(e.clusterData && e.clusterData.length){
-      // 聚合点 → 放大一级
-      if(pos) map.setZoomAndCenter(map.getZoom()+1, pos);
-    } else {
-      // 单点店铺 → 弹窗
-      var d = m.getExtData ? m.getExtData() : null;
-      if(d && d.n && pos) showShopInfo(d, pos);
+  /* 坐标反查最近店铺（点击兜底用） */
+  function findNearestShop(pos){
+    if(!pos) return null;
+    var lng, lat;
+    if(pos.getLng){ lng = pos.getLng(); lat = pos.getLat(); }
+    else { lng = pos[0]; lat = pos[1]; }
+    var best = null, bestD = 1e12;
+    var arr = state.view && state.view.length ? state.view : state.all;
+    for(var i=0;i<arr.length;i++){
+      var s = arr[i];
+      var d = (s.lng-lng)*(s.lng-lng) + (s.lat-lat)*(s.lat-lat);
+      if(d < bestD){ bestD = d; best = s; }
     }
+    if(bestD < 1e-6) return best; // 约 0.001 度以内视为同一位置
+    return null;
   }
 
   function loadViewport(){
@@ -352,6 +367,7 @@
       var x=state.all[i];
       if(x.lng>=w && x.lng<=e && x.lat>=s && x.lat<=n) inView.push(x);
     }
+    state.view = inView;
     var points = [];
     for(var j=0;j<inView.length;j++){
       points.push({ lnglat:[inView[j].lng, inView[j].lat], data:inView[j] });
@@ -363,7 +379,6 @@
       renderClusterMarker: renderClusterMarker,
       renderMarker: renderMarker
     });
-    cluster.on('click', onClusterClick);
     $('mapCount').textContent = '当前视野 ' + fmt(inView.length) + ' 家 · 共 ' + fmt(state.all.length) + ' 家';
   }
 
